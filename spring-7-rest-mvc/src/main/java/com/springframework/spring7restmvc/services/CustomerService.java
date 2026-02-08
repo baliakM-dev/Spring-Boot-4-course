@@ -107,6 +107,14 @@ public class CustomerService {
         return customerMapper.customerToResponseDto(customerRepository.save(customer));
     }
 
+    @Transactional
+    public void deleteCustomerById(UUID id) {
+        log.debug("Deleting customer with ID: {}", id);
+        var customer = getCustomerOrThrow(id);
+
+        customerRepository.delete(customer);
+        log.info("Customer deleted with ID: {}", id);
+    }
 
     /**
      * Validates that a customer name is unique.

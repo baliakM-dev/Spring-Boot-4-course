@@ -9,9 +9,6 @@ import com.springframework.spring7restmvc.services.BeerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Unit tests for BeerController.
  *
- * Uses MockMvc to test REST endpoints with mocked service layer.
+ * Uses MockMvc to test REST endpoints with a mocked service layer.
  */
 @WebMvcTest(BeerController.class)
 class BeerControllerTest {
