@@ -7,6 +7,7 @@ import com.springframework.spring7restmvc.repositories.BeerRepository;
 import com.springframework.spring7restmvc.repositories.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
+@Profile("!test")
 public class BootstrapData implements CommandLineRunner {
 
     private final CustomerRepository customerRepository;
