@@ -55,7 +55,7 @@ public class BeerController {
             @RequestParam(required = false) String beername,
             @RequestParam(required = false) BeerStyle beerStyle,
             @RequestParam(required = false) boolean showInventoryOnHand,
-            @PageableDefault(size = 10, page = 0, sort = "beerName", direction = Sort.Direction.ASC) Pageable pageable
+            @PageableDefault(sort = "beerName", direction = Sort.Direction.ASC) Pageable pageable
             ) {
         log.debug("Retrieving all beers");
         return ResponseEntity.ok(beerService.getAllBeers(beername, beerStyle, showInventoryOnHand, pageable));

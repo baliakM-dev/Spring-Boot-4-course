@@ -20,6 +20,7 @@ public interface CustomerMapper {
     @Mapping(target = "updatedAt", ignore = true)
     Customer dtoToCustomer(CustomerRequestDTO customerRequestDTO);
 
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

@@ -104,7 +104,7 @@ public class CustomerService {
         customerMapper.updateCustomerFromDto(dto, customer);
 
         log.info("Customer updated with ID: {}", id);
-        return customerMapper.customerToResponseDto(customerRepository.save(customer));
+        return customerMapper.customerToResponseDto(customer);
     }
 
     @Transactional

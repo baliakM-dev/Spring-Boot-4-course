@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -346,30 +347,36 @@ class BeerIntegrationTest {
                 .price(BigDecimal.valueOf(2.00))
                 .build());
 
-        var originalUpdatedAt = beer.getUpdatedAt();
-
-        // Wait a bit to ensure timestamp difference
-        Thread.sleep(100);
+        LocalDateTime originalCreatedAt = beer.getCreatedAt();
+        LocalDateTime originalUpdatedAt = beer.getUpdatedAt();
 
         // When
         String updateJson = """
-            {
-              "beerName": "Time Test Beer",
-              "beerStyle": "IPA",
-              "upc": "TIME123",
-              "quantityOnHand": 100,
-              "price": 2.50
-            }
-            """;
+        {
+          "beerName": "Time Test Beer",
+          "beerStyle": "IPA",
+          "upc": "TIME123",
+          "quantityOnHand": 100,
+          "price": 2.50
+        }
+        """;
 
         mockMvc.perform(put(BeerController.BASE_URL + "/" + beer.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateJson))
                 .andExpect(status().isOk());
 
-        // Then - verify updatedAt changed
+        // Then - verify timestamps
         Beer updated = beerRepository.findById(beer.getId()).orElseThrow();
-        assertThat(updated.getCreatedAt()).isEqualTo(beer.getCreatedAt());
+
+        assertThat(updated.getCreatedAt()).isEqualTo(originalCreatedAt);
+
+        assertThat(updated.getUpdatedAt())
+                .isNotNull()
+                .isAfter(originalUpdatedAt);
+
+        assertThat(updated.getBeerStyle()).isEqualTo(BeerStyle.IPA);
+        assertThat(updated.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(2.50));
     }
 
     @Test
