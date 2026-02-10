@@ -32,9 +32,30 @@ public interface BeerRepository extends JpaRepository<Beer, UUID> {
      */
     boolean existsByBeerNameIgnoreCaseAndIdNot(String beerName, UUID id);
 
+    /**
+     * Find all beers by beer name (case-insensitive).
+     * @param beerName the beer name to search for
+     * @param pageable pagination parameters
+     * @return a page of beers matching the name
+     */
     Page<Beer> findAllByBeerNameContainingIgnoreCase(String beerName, Pageable pageable);
 
+    /**
+     * Find all beers by style (case-insensitive).
+     *
+     * @param beerStyle the beer style to search for
+     * @param pageable pagination parameters
+     * @return a page of beers matching the style
+     */
     Page<Beer> findAllByBeerStyle(BeerStyle beerStyle, Pageable pageable);
 
+    /**
+     * Find all beers by name and style (case-insensitive).
+     *
+     * @param beerName the beer name to search for
+     * @param beerStyle the beer style to search for
+     * @param pageable pagination parameters
+     * @return a page of beers matching the name and style
+     */
     Page<Beer> findAllByBeerNameContainingIgnoreCaseAndBeerStyle(String beerName, BeerStyle beerStyle, Pageable pageable);
 }
