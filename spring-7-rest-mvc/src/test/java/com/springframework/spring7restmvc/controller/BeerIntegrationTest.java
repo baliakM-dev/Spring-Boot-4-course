@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-@ActiveProfiles("test")
+@ActiveProfiles("localmysql")
 class BeerIntegrationTest {
 
     @Autowired
@@ -76,37 +76,6 @@ class BeerIntegrationTest {
                 .andExpect(jsonPath("$.quantityOnHand").value(100))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
-    }
-
-    @Test
-    void shouldPreventDuplicateBeerNames_CaseInsensitive() throws Exception {
-        // Given - existing beer
-        Beer existing = Beer.builder()
-                .beerName("Pilsner Urquell")
-                .beerStyle(BeerStyle.LAGER)
-                .upc("123456")
-                .price(BigDecimal.valueOf(2.50))
-                .build();
-        beerRepository.save(existing);
-
-        // When - try to create duplicate with different case
-        String duplicateJson = """
-            {
-              "beerName": "PILSNER URQUELL",
-              "beerStyle": "IPA",
-              "upc": "999999",
-              "quantityOnHand": 50,
-              "price": 3.00
-            }
-            """;
-
-        // Then - should fail with conflict
-        mockMvc.perform(post(BeerController.BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(duplicateJson))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.title").value("Resource already exists"))
-                .andExpect(jsonPath("$.detail").value(containsStringIgnoringCase("pilsner")));
     }
 
     @Test
@@ -342,10 +311,14 @@ class BeerIntegrationTest {
                 .build());
 
         // When/Then
-        mockMvc.perform(get(BeerController.BASE_URL))
+        mockMvc.perform(get(BeerController.BASE_URL)
+                        .param("size", "10")
+                        .accept("application/json"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)))
-                .andExpect(jsonPath("$[*].beerName", containsInAnyOrder("Beer 1", "Beer 2", "Beer 3")));
+                // Page JSON: content je pole
+                .andExpect(jsonPath("$.content", hasSize(3)))
+                .andExpect(jsonPath("$.content[*].beerName",
+                        containsInAnyOrder("Beer 1", "Beer 2", "Beer 3")));
     }
 
 
@@ -397,5 +370,43 @@ class BeerIntegrationTest {
         // Then - verify updatedAt changed
         Beer updated = beerRepository.findById(beer.getId()).orElseThrow();
         assertThat(updated.getCreatedAt()).isEqualTo(beer.getCreatedAt());
+    }
+
+    @Test
+    void shouldReturnOnlyBeersWithNameContainingGalaxy() throws Exception {
+        // given
+        beerRepository.save(Beer.builder()
+                .beerName("Galaxy IPA")
+                .beerStyle(BeerStyle.IPA)
+                .upc("g1")
+                .price(new BigDecimal("2.50"))
+                .build());
+
+        beerRepository.save(Beer.builder()
+                .beerName("Super Galaxy Lager")
+                .beerStyle(BeerStyle.LAGER)
+                .upc("g2")
+                .price(new BigDecimal("1.90"))
+                .build());
+
+        beerRepository.save(Beer.builder()
+                .beerName("Nebula Stout")
+                .beerStyle(BeerStyle.STOUT)
+                .upc("n1")
+                .price(new BigDecimal("3.10"))
+                .build());
+
+        // when/then
+        mockMvc.perform(get(BeerController.BASE_URL)
+                        .param("beername", "galaxy")
+                        .param("size", "20")
+                        .accept("application/json"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[*].beerName",
+                        containsInAnyOrder("Galaxy IPA", "Super Galaxy Lager")))
+                // a pre istotu: žiadny iný názov
+                .andExpect(jsonPath("$.content[*].beerName",
+                        not(hasItem("Nebula Stout"))));
     }
 }

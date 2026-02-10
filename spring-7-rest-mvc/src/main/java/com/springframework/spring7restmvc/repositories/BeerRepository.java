@@ -1,6 +1,9 @@
 package com.springframework.spring7restmvc.repositories;
 
 import com.springframework.spring7restmvc.entities.Beer;
+import com.springframework.spring7restmvc.entities.BeerStyle;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -29,4 +32,9 @@ public interface BeerRepository extends JpaRepository<Beer, UUID> {
      */
     boolean existsByBeerNameIgnoreCaseAndIdNot(String beerName, UUID id);
 
+    Page<Beer> findAllByBeerNameContainingIgnoreCase(String beerName, Pageable pageable);
+
+    Page<Beer> findAllByBeerStyle(BeerStyle beerStyle, Pageable pageable);
+
+    Page<Beer> findAllByBeerNameContainingIgnoreCaseAndBeerStyle(String beerName, BeerStyle beerStyle, Pageable pageable);
 }

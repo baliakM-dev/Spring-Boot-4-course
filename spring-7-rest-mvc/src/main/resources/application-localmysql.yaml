@@ -1,0 +1,50 @@
+spring:
+  flyway:
+    enabled: true
+
+  docker:
+    compose:
+      enabled: true
+
+  datasource:
+    username: restadmin
+    password: password
+    url: jdbc:mysql://localhost:3306/restdb?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+        useLocalSessionState: true
+        cacheCallableStmts: true
+        rewriteBatchedStatements: true
+        cacheResultSetMetadata: true
+        cacheServerConfiguration: true
+        elideSetAutoCommits: true
+        maintainTimeStats: false
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database: mysql
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        show_sql: true
+        format_sql: true
+
+logging:
+  level:
+    org:
+      hibernate:
+        orm:
+          jdbc:
+            bind: trace
+
+app:
+  import:
+    beers:
+      enabled: false

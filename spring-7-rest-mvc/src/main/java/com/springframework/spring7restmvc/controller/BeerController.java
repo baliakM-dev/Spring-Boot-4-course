@@ -2,11 +2,13 @@ package com.springframework.spring7restmvc.controller;
 
 import com.springframework.spring7restmvc.dto.beer.BeerRequestDTO;
 import com.springframework.spring7restmvc.dto.beer.BeerResponseDTO;
+import com.springframework.spring7restmvc.entities.BeerStyle;
 import com.springframework.spring7restmvc.services.BeerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -27,6 +29,7 @@ import java.util.UUID;
 public class BeerController {
 
     public static final String BASE_URL = "/api/v1/beer";
+    public static final String BASE_URL_MANUAL = "/api/v1/beer/manual";
     public static final String BASE_URL_ID = BASE_URL + "/{beerId}";
 
     private final BeerService beerService;
@@ -44,10 +47,32 @@ public class BeerController {
         return ResponseEntity.ok(beerService.getBeerById(beerId));
     }
 
+    /**
+     * GetAllBeers with spring domain pagination
+     */
     @GetMapping(BASE_URL)
-    public ResponseEntity<List<BeerResponseDTO>> getAllBeers() {
+    public ResponseEntity<Page<BeerResponseDTO>> getAllBeers(
+            @RequestParam(required = false) String beername,
+            @RequestParam(required = false) BeerStyle beerStyle,
+            @RequestParam(required = false) boolean showInventoryOnHand,
+            @PageableDefault(size = 10, page = 0, sort = "beerName", direction = Sort.Direction.ASC) Pageable pageable
+            ) {
         log.debug("Retrieving all beers");
-        return ResponseEntity.ok(beerService.getAllBeers());
+        return ResponseEntity.ok(beerService.getAllBeers(beername, beerStyle, showInventoryOnHand, pageable));
+    }
+
+    /**
+     * GetAllBeers with manual pagination
+     */
+    @GetMapping(BASE_URL_MANUAL)
+    public ResponseEntity<List<BeerResponseDTO>> getAllBeersManual(
+            @RequestParam(required = false) String beername,
+            @RequestParam(required = false) BeerStyle beerStyle,
+            @RequestParam(required = false) boolean showInventoryOnHand,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size
+    ) {
+        return ResponseEntity.ok(beerService.getAllBeersManual(beername, beerStyle, showInventoryOnHand, page, size));
     }
 
     @PutMapping(BASE_URL_ID)

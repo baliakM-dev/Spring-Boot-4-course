@@ -7,8 +7,12 @@ import com.springframework.spring7restmvc.exceptions.NotFoundException;
 import com.springframework.spring7restmvc.exceptions.ResourceAlreadyExistsExceptions;
 import com.springframework.spring7restmvc.services.BeerService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -217,15 +221,24 @@ class BeerControllerTest {
                 )
         );
 
-        given(beerService.getAllBeers())
-                .willReturn(beers);
+        Page<BeerResponseDTO> page = new PageImpl<>(beers);
 
-        // When/Then
-        mockMvc.perform(get(BeerController.BASE_URL))
+        given(beerService.getAllBeers(
+                ArgumentMatchers.isNull(),            // beername
+                ArgumentMatchers.isNull(),            // beerStyle
+                ArgumentMatchers.eq(false),           // showInventoryOnHand
+                ArgumentMatchers.any(Pageable.class)  // pageable z controllera
+        )).willReturn(page);
+
+        // When / Then
+        mockMvc.perform(get(BeerController.BASE_URL)
+                        .param("showInventoryOnHand", "false"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].beerName").value("Beer 1"))
-                .andExpect(jsonPath("$[1].beerName").value("Beer 2"));
+                // Page JSON -> content je array
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].beerName").value("Beer 1"))
+                .andExpect(jsonPath("$.content[1].beerName").value("Beer 2"))
+                .andExpect(jsonPath("$.totalElements").value(2));
     }
 
     @Test

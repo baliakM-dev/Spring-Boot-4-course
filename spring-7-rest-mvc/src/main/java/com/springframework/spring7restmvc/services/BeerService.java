@@ -1,8 +1,11 @@
 package com.springframework.spring7restmvc.services;
 
+import com.opencsv.bean.CsvToBeanBuilder;
+import com.springframework.spring7restmvc.dto.beer.BeerCSVRecord;
 import com.springframework.spring7restmvc.dto.beer.BeerRequestDTO;
 import com.springframework.spring7restmvc.dto.beer.BeerResponseDTO;
 import com.springframework.spring7restmvc.entities.Beer;
+import com.springframework.spring7restmvc.entities.BeerStyle;
 import com.springframework.spring7restmvc.exceptions.NotFoundException;
 import com.springframework.spring7restmvc.exceptions.ResourceAlreadyExistsExceptions;
 import com.springframework.spring7restmvc.mapper.BeerMapper;
@@ -13,7 +16,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,8 +51,6 @@ public class BeerService {
     public BeerResponseDTO createNewBeer(BeerRequestDTO dto) {
         log.debug("Creating new beer with name: {}", dto.beerName());
 
-        validateBeerNameUniqueness(dto.beerName(), null);
-
         Beer beer = beerMapper.dtoToBeer(dto);
         Beer saved = beerRepository.save(beer);
 
@@ -67,17 +72,69 @@ public class BeerService {
     }
 
     /**
-     * Retrieves all beers from the system.
+     * Retrieves all beers from the system with optional filtering and pagination.
      *
      * @return list of all beers
      */
     @Transactional(readOnly = true)
-    public List<BeerResponseDTO> getAllBeers() {
+    public Page<BeerResponseDTO> getAllBeers(String beerName,
+                                             BeerStyle beerStyle,
+                                             boolean showInventoryOnHand,
+                                             Pageable pageable) {
         log.debug("Fetching all beers");
-        return beerRepository.findAll()
-                .stream()
-                .map(beerMapper::beerToResponseDTO)
-                .toList();
+        Page<Beer> beerPage;
+
+        boolean hasName = StringUtils.hasText(beerName);
+
+        if (hasName && beerStyle == null) {
+            beerPage = beerRepository.findAllByBeerNameContainingIgnoreCase(beerName, pageable);
+        } else if (!hasName && beerStyle != null) {
+            beerPage = beerRepository.findAllByBeerStyle(beerStyle, pageable);
+        } else if (hasName) { // hasName && beerStyle != null
+            beerPage = beerRepository.findAllByBeerNameContainingIgnoreCaseAndBeerStyle(beerName, beerStyle, pageable);
+        } else {
+            beerPage = beerRepository.findAll(pageable);
+        }
+        if (!showInventoryOnHand) {
+            beerPage.forEach(beer -> {
+                beer.setQuantityOnHand(null);
+            });
+        }
+
+        return beerPage.map(beerMapper::beerToResponseDTO);
+    }
+
+    /**
+     * Retrieve all beers from the system with optional filtering and manual pagination.
+     *
+     * @return list of all beers
+     */
+    @Transactional(readOnly = true)
+    public List<BeerResponseDTO> getAllBeersManual(String beerName,
+                                                   BeerStyle beerStyle,
+                                                   boolean showInventoryOnHand,
+                                                   Integer page,
+                                                   Integer size) {
+        log.debug("Fetching all beers with manual pagination");
+        Page<Beer> beerPage;
+        boolean hasName = StringUtils.hasText(beerName);
+
+        if (hasName && beerStyle == null) {
+            beerPage = beerRepository.findAllByBeerNameContainingIgnoreCase(beerName, Pageable.ofSize(size).withPage(page));
+        } else if (!hasName && beerStyle != null) {
+            beerPage = beerRepository.findAllByBeerStyle(beerStyle, Pageable.ofSize(size).withPage(page));
+        } else if (hasName) { // hasName && beerStyle != null
+            beerPage = beerRepository.findAllByBeerNameContainingIgnoreCaseAndBeerStyle(beerName, beerStyle, Pageable.ofSize(size).withPage(page));
+        } else {
+            beerPage = beerRepository.findAll(Pageable.ofSize(size).withPage(page));
+        }
+        if (!showInventoryOnHand) {
+            beerPage.forEach(beer -> {
+                beer.setQuantityOnHand(null);
+            });
+        }
+
+        return beerPage.map(beerMapper::beerToResponseDTO).toList();
     }
 
     /**
@@ -152,6 +209,28 @@ public class BeerService {
         beerRepository.delete(beer);
 
         log.info("Deleted beer: id={}", beerId);
+    }
+
+    public List<BeerCSVRecord> importBeers(File file) {
+
+        try{
+            log.info("Importing beers from file: {}", file.getAbsolutePath());
+
+            List<BeerCSVRecord> rec = new CsvToBeanBuilder<BeerCSVRecord>(new FileReader(file))
+                    .withType(BeerCSVRecord.class)
+                    .withIgnoreLeadingWhiteSpace(true)
+                    .build()
+                    .parse();
+
+            log.info("Import complete. {} beers imported.", rec.size());
+            return rec;
+        } catch (FileNotFoundException ex) {
+            log.error("File not found: {}", file.getAbsolutePath());
+            throw new RuntimeException("File not found: " + file.getAbsolutePath(), ex);
+        } catch (Exception e) {
+            log.error("Error importing beers from file: {}", file.getAbsolutePath());
+            throw new RuntimeException("Error importing beers from file: " + file.getAbsolutePath(), e);
+        }
     }
 
     /**
