@@ -16,6 +16,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -23,8 +25,10 @@ import java.util.UUID;
  * <p>
  * Uses JPA Auditing for automatic timestamp management.
  * Enforces unique beer names at the database level.
+ * Owning side of the many-to-many relationship with Category.
  */
-@Data
+@Getter
+@Setter
 @Builder
 @Entity
 @NoArgsConstructor
@@ -35,7 +39,7 @@ public class Beer {
     @Id
     @GeneratedValue(generator = "UUID")
     @UuidGenerator
-    @Column(name = "beerId", columnDefinition = "VARCHAR(36)", updatable = false, nullable = false)
+    @Column(name = "beer_id", columnDefinition = "VARCHAR(36)", updatable = false, nullable = false)
     @JdbcTypeCode(SqlTypes.CHAR)
     private UUID id;
 
@@ -55,6 +59,47 @@ public class Beer {
 
     private Integer quantityOnHand;
 
+    /**
+     * Owning side of many-to-many relationship with Category.
+     * JoinTable defines the association table structure.
+     * Builder.Default ensures Set is initialized even when using builder.
+     */
+    @Builder.Default
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "beer_category",
+            joinColumns = @JoinColumn(name = "beer_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private Set<Category> categories = new HashSet<>();
+
+    /**
+     * Helper method to add a category to this beer.
+     * Maintains bidirectional consistency by updating both sides.
+     * Prevents infinite recursion by checking if category is already added.
+     *
+     * @param category the category to add
+     */
+    public void addCategory(Category category) {
+        if (category != null && !this.categories.contains(category)) {
+            this.categories.add(category);
+            category.getBeers().add(this);
+        }
+    }
+
+    /**
+     * Helper method to remove a category from this beer.
+     * Maintains bidirectional consistency.
+     *
+     * @param category the category to remove
+     */
+    public void removeCategory(Category category) {
+        if (category != null) {
+            this.categories.remove(category);
+            category.getBeers().remove(this);
+        }
+    }
+
     @Positive
     @NotNull
     private BigDecimal price;
@@ -65,4 +110,18 @@ public class Beer {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Beer)) return false;
+        Beer beer = (Beer) o;
+        return id != null && id.equals(beer.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
 }

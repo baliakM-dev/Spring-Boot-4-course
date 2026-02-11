@@ -1,4 +1,4 @@
-package com.springframework.spring7restmvc.controller;
+package com.springframework.spring7restmvc.controllers;
 
 import com.springframework.spring7restmvc.dto.beer.BeerRequestDTO;
 import com.springframework.spring7restmvc.dto.beer.BeerResponseDTO;
@@ -58,7 +58,8 @@ class BeerControllerTest {
                 BeerStyle.IPA,
                 "123456",
                 100,
-                new BigDecimal("10.50")
+                new BigDecimal("10.50"),
+                null
         );
 
         UUID beerId = UUID.randomUUID();
@@ -69,6 +70,7 @@ class BeerControllerTest {
                 request.upc(),
                 request.quantityOnHand(),
                 request.price(),
+                null,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -178,6 +180,7 @@ class BeerControllerTest {
                 "012345678905",
                 100,
                 new BigDecimal("2.99"),
+                null,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -206,6 +209,7 @@ class BeerControllerTest {
                         "111",
                         100,
                         new BigDecimal("1.50"),
+                        null,
                         LocalDateTime.now(),
                         LocalDateTime.now()
                 ),
@@ -216,6 +220,7 @@ class BeerControllerTest {
                         "222",
                         200,
                         new BigDecimal("2.50"),
+                        null,
                         LocalDateTime.now(),
                         LocalDateTime.now()
                 )
@@ -285,7 +290,8 @@ class BeerControllerTest {
                 BeerStyle.IPA,
                 "123456",
                 100,
-                new BigDecimal("12.50")
+                new BigDecimal("12.50"),
+                null
         );
 
         BeerResponseDTO response = new BeerResponseDTO(
@@ -295,6 +301,7 @@ class BeerControllerTest {
                 request.upc(),
                 request.quantityOnHand(),
                 request.price(),
+                null,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -345,6 +352,7 @@ class BeerControllerTest {
                 "123456",
                 100,
                 new BigDecimal("12.50"),
+                null,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );

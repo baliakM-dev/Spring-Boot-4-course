@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Data Transfer Object for beer creation requests.
@@ -36,5 +38,7 @@ public record BeerRequestDTO(
 
         @NotNull(message = "{beer.price.notblank}")
         @Positive(message = "{beer.pricePositive.notblank}")
-        BigDecimal price
+        BigDecimal price,
+
+        Set<UUID> categoryIds
 ) {}

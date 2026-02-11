@@ -43,6 +43,7 @@ logging:
         orm:
           jdbc:
             bind: trace
+        sql: debug
 
 app:
   import:

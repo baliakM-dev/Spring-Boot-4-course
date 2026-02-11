@@ -6,10 +6,12 @@ import com.springframework.spring7restmvc.dto.beer.BeerRequestDTO;
 import com.springframework.spring7restmvc.dto.beer.BeerResponseDTO;
 import com.springframework.spring7restmvc.entities.Beer;
 import com.springframework.spring7restmvc.entities.BeerStyle;
+import com.springframework.spring7restmvc.entities.Category;
 import com.springframework.spring7restmvc.exceptions.NotFoundException;
 import com.springframework.spring7restmvc.exceptions.ResourceAlreadyExistsExceptions;
 import com.springframework.spring7restmvc.mapper.BeerMapper;
 import com.springframework.spring7restmvc.repositories.BeerRepository;
+import com.springframework.spring7restmvc.repositories.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,11 +24,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
- * Service layer for managing beer business logic.
- *
+ * Service layer for managing beer business logic.*
  * Handles CRUD operations with proper validation and transaction management.
  */
 @Service
@@ -35,11 +38,12 @@ import java.util.UUID;
 public class BeerService {
 
     private final BeerRepository beerRepository;
+    private final CategoryRepository categoryRepository;
     private final BeerMapper beerMapper;
+    private final CategoryService categoryService;
 
     /**
-     * Creates a new beer ensuring unique name across the catalog.
-     *
+     * Creates a new beer ensuring unique name across the catalog.*
      * Uses save() which delegates to EntityManager and triggers JPA Auditing
      * for automatic timestamp management.
      *
@@ -50,8 +54,24 @@ public class BeerService {
     @Transactional
     public BeerResponseDTO createNewBeer(BeerRequestDTO dto) {
         log.debug("Creating new beer with name: {}", dto.beerName());
-
+        // 1. create beer entity from DTO
         Beer beer = beerMapper.dtoToBeer(dto);
+
+        // 2. If dto contains ids of categories add
+        // voliteľné priradenie kategórií
+        if (dto.categoryIds() != null && !dto.categoryIds().isEmpty()) {
+
+            var categories = categoryRepository.findAllById(dto.categoryIds());
+
+            // ochrana: ak niektoré ID neexistuje, radšej failni
+            if (categories.size() != dto.categoryIds().size()) {
+                var foundIds = categories.stream().map(Category::getId).collect(java.util.stream.Collectors.toSet());
+                var missing = dto.categoryIds().stream().filter(id -> !foundIds.contains(id)).toList();
+                throw new NotFoundException("Category", "id", missing.toString());
+            }
+
+            categories.forEach(beer::addCategory); // teraz už bude fungovať
+        }
         Beer saved = beerRepository.save(beer);
 
         log.info("Created beer: id={}, name={}", saved.getId(), saved.getBeerName());
@@ -96,9 +116,7 @@ public class BeerService {
             beerPage = beerRepository.findAll(pageable);
         }
         if (!showInventoryOnHand) {
-            beerPage.forEach(beer -> {
-                beer.setQuantityOnHand(null);
-            });
+            beerPage.forEach(beer -> beer.setQuantityOnHand(null));
         }
 
         return beerPage.map(beerMapper::beerToResponseDTO);
@@ -129,24 +147,21 @@ public class BeerService {
             beerPage = beerRepository.findAll(Pageable.ofSize(size).withPage(page));
         }
         if (!showInventoryOnHand) {
-            beerPage.forEach(beer -> {
-                beer.setQuantityOnHand(null);
-            });
+            beerPage.forEach(beer -> beer.setQuantityOnHand(null));
         }
 
         return beerPage.map(beerMapper::beerToResponseDTO).toList();
     }
 
     /**
-     * Updates an existing beer with full replacement.
-     *
+     * Updates an existing beer with full replacement.*
      * Validates name uniqueness only if the name is being changed.
      * JPA Auditing automatically updates the updatedAt timestamp.
      *
      * @param beerId the beer ID to update
-     * @param dto the new beer data
+     * @param dto    the new beer data
      * @return updated beer
-     * @throws NotFoundException if beer not found
+     * @throws NotFoundException               if beer not found
      * @throws ResourceAlreadyExistsExceptions if the new name conflicts with existing beer
      */
     @Transactional
@@ -161,21 +176,21 @@ public class BeerService {
         }
 
         beerMapper.updateBeerFromDto(dto, beer);
+        Beer saved = beerRepository.saveAndFlush(beer);
 
         log.info("Updated beer: id={}, name={}", beer.getId(), beer.getBeerName());
-        return beerMapper.beerToResponseDTO(beer);
+        return beerMapper.beerToResponseDTO(saved);
     }
 
     /**
-     * Applies a partial update to an existing beer.
-     *
+     * Applies a partial update to an existing beer.*
      * Only non-null fields from the patch are applied.
-     * Validates name uniqueness only if name is being changed.
+     * Validates name uniqueness only if the name is being changed.
      *
      * @param beerId the beer ID to update
-     * @param patch partial update data (null fields are ignored)
+     * @param patch  partial update data (null fields are ignored)
      * @return updated beer
-     * @throws NotFoundException if beer not found
+     * @throws NotFoundException               if beer not found
      * @throws ResourceAlreadyExistsExceptions if new name conflicts
      */
     @Transactional
@@ -211,9 +226,14 @@ public class BeerService {
         log.info("Deleted beer: id={}", beerId);
     }
 
+    /**
+     * Imports beers from CSV file.
+     *
+     * @param file CSV file
+     */
     public List<BeerCSVRecord> importBeers(File file) {
 
-        try{
+        try {
             log.info("Importing beers from file: {}", file.getAbsolutePath());
 
             List<BeerCSVRecord> rec = new CsvToBeanBuilder<BeerCSVRecord>(new FileReader(file))
@@ -232,6 +252,7 @@ public class BeerService {
             throw new RuntimeException("Error importing beers from file: " + file.getAbsolutePath(), e);
         }
     }
+
 
     /**
      * Applies non-null fields from patch to beer entity.
@@ -255,12 +276,87 @@ public class BeerService {
     }
 
     /**
-     * Validates that a beer name is unique.
+     * Adds a category to a beer.
+     * Maintains bidirectional consistency.
      *
+     * @param beerId     beer ID
+     * @param categoryId category ID
+     * @return updated beer with new category
+     * @throws NotFoundException if beer or category not found
+     */
+    @Transactional
+    public BeerResponseDTO addCategoryToBeer(UUID beerId, UUID categoryId) {
+        log.debug("Adding category {} to beer {}", categoryId, beerId);
+
+        Beer beer = getBeerOrThrow(beerId);
+        Category category = categoryService.getCategoryOrThrow(categoryId);
+
+        beer.addCategory(category);
+
+        log.info("Added category {} to beer {}", categoryId, beerId);
+        return beerMapper.beerToResponseDTO(beer);
+    }
+
+    /**
+     * Removes a category from a beer.
+     * Maintains bidirectional consistency.
+     *
+     * @param beerId     beer ID
+     * @param categoryId category ID
+     * @return updated beer without the category
+     * @throws NotFoundException if beer or category not found
+     */
+    @Transactional
+    public BeerResponseDTO removeCategoryFromBeer(UUID beerId, UUID categoryId) {
+        log.debug("Removing category {} from beer {}", categoryId, beerId);
+
+        Beer beer = getBeerOrThrow(beerId);
+        Category category = categoryService.getCategoryOrThrow(categoryId);
+
+        beer.removeCategory(category);
+
+        log.info("Removed category {} from beer {}", categoryId, beerId);
+        return beerMapper.beerToResponseDTO(beer);
+    }
+
+    /**
+     * Sets all categories for a beer (replaces existing categories).
+     * Maintains bidirectional consistency.
+     *
+     * @param beerId      beer ID
+     * @param categoryIds set of category IDs to assign
+     * @return updated beer with new categories
+     * @throws NotFoundException if beer or any category not found
+     */
+    @Transactional
+    public BeerResponseDTO setCategoriesForBeer(UUID beerId, Set<UUID> categoryIds) {
+        log.debug("Setting categories for beer {}: {}", beerId, categoryIds);
+
+        Beer beer = getBeerOrThrow(beerId);
+
+        // Remove all existing categories
+        beer.getCategories().forEach(category -> category.getBeers().remove(beer));
+        beer.getCategories().clear();
+
+        // Add new categories
+        if (categoryIds != null && !categoryIds.isEmpty()) {
+            Set<Category> categories = categoryIds.stream()
+                    .map(categoryService::getCategoryOrThrow)
+                    .collect(Collectors.toSet());
+
+            categories.forEach(beer::addCategory);
+        }
+
+        log.info("Set categories for beer {}: {}", beerId, categoryIds);
+        return beerMapper.beerToResponseDTO(beer);
+    }
+
+    /**
+     * Validates that a beer name is unique.*
      * For updates, excludeId allows the current beer to keep its name.
      * Case-insensitive check prevents "Pilsner" and "PILSNER" duplicates.
      *
-     * @param beerName the name to validate
+     * @param beerName  the name to validate
      * @param excludeId the beer ID to exclude from check (null for create operations)
      * @throws ResourceAlreadyExistsExceptions if name exists
      */

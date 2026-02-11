@@ -1,5 +1,6 @@
 package com.springframework.spring7restmvc.config;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
@@ -12,4 +13,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @Configuration
 @EnableJpaAuditing
 public class JpaConfig {
+
+    @PostConstruct
+    void init() {
+        System.out.println(">>> JpaConfig loaded, JPA auditing enabled");
+    }
 }

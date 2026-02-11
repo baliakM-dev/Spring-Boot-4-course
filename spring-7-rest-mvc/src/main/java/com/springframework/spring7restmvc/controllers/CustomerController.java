@@ -1,4 +1,4 @@
-package com.springframework.spring7restmvc.controller;
+package com.springframework.spring7restmvc.controllers;
 
 
 import com.springframework.spring7restmvc.dto.customer.CustomerRequestDTO;

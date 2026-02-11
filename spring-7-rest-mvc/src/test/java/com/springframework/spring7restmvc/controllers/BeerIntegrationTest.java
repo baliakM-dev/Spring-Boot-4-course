@@ -1,8 +1,9 @@
-package com.springframework.spring7restmvc.controller;
+package com.springframework.spring7restmvc.controllers;
 
 import com.springframework.spring7restmvc.entities.Beer;
 import com.springframework.spring7restmvc.entities.BeerStyle;
 import com.springframework.spring7restmvc.repositories.BeerRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,10 @@ class BeerIntegrationTest {
 
     @Autowired
     private BeerRepository beerRepository;
+
+    @Autowired
+    EntityManager entityManager;
+
 
     @BeforeEach
     void setUp() {
@@ -337,20 +342,23 @@ class BeerIntegrationTest {
                 .andExpect(jsonPath("$.title").value("Invalid JSON input"));
     }
 
+
     @Test
     void shouldUpdateTimestampsOnUpdate() throws Exception {
-        // Given
-        Beer beer = beerRepository.save(Beer.builder()
+        Beer beer = beerRepository.saveAndFlush(Beer.builder()
                 .beerName("Time Test Beer")
                 .beerStyle(BeerStyle.LAGER)
                 .upc("TIME123")
                 .price(BigDecimal.valueOf(2.00))
                 .build());
 
-        LocalDateTime originalCreatedAt = beer.getCreatedAt();
-        LocalDateTime originalUpdatedAt = beer.getUpdatedAt();
+        Beer persisted = beerRepository.findById(beer.getId()).orElseThrow();
 
-        // When
+        LocalDateTime originalCreatedAt = persisted.getCreatedAt();
+        LocalDateTime originalUpdatedAt = persisted.getUpdatedAt();
+
+        Thread.sleep(25);
+
         String updateJson = """
         {
           "beerName": "Time Test Beer",
@@ -366,18 +374,21 @@ class BeerIntegrationTest {
                         .content(updateJson))
                 .andExpect(status().isOk());
 
-        // Then - verify timestamps
+        // 🔥 critical part
+        entityManager.flush();
+        entityManager.clear();
+
         Beer updated = beerRepository.findById(beer.getId()).orElseThrow();
 
         assertThat(updated.getCreatedAt()).isEqualTo(originalCreatedAt);
-
-        assertThat(updated.getUpdatedAt())
-                .isNotNull()
-                .isAfter(originalUpdatedAt);
+        assertThat(updated.getUpdatedAt()).isAfter(originalUpdatedAt);
 
         assertThat(updated.getBeerStyle()).isEqualTo(BeerStyle.IPA);
         assertThat(updated.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(2.50));
+        assertThat(updated.getQuantityOnHand()).isEqualTo(100);
     }
+
+
 
     @Test
     void shouldReturnOnlyBeersWithNameContainingGalaxy() throws Exception {

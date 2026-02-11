@@ -10,17 +10,27 @@ import org.mapstruct.MappingTarget;
 @Mapper
 public interface BeerMapper {
 
-
-    // Entity -> Response DTO
+    /**
+     * Convert Beer entity to response DTO.
+     * Categories are automatically mapped via CategoryMapper.
+     */
     BeerResponseDTO beerToResponseDTO(Beer beer);
 
-    // Request DTO -> Entity
+    /**
+     * Convert request DTO to Beer entity.
+     * Ignores managed fields and categories (managed separately).
+     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "categories", ignore = true)
     Beer dtoToBeer(BeerRequestDTO beerRequestDTO);
 
+    /**
+     * Update the existing Beer entity from request DTO.
+     * Ignores managed fields and categories (managed via dedicated service methods).
+     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
