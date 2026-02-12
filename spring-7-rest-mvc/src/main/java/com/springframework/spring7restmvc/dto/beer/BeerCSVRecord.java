@@ -6,7 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Created by jt, Spring Framework Guru.
+ * Data Transfer Object for beer CSV records.
+ * Represents a CSV record containing beer data with various attributes.
  */
 @Data
 @NoArgsConstructor

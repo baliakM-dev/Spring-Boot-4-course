@@ -7,18 +7,26 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+/**
+ * MapStruct mapper for Beer entity and DTOs.
+ * Component model Spring ensures CDI injection.
+ */
 @Mapper
 public interface BeerMapper {
 
     /**
      * Convert Beer entity to response DTO.
-     * Categories are automatically mapped via CategoryMapper.
+     *
+     * @param beer beer entity
+     * @return BeerResponseDTO response DTO
      */
     BeerResponseDTO beerToResponseDTO(Beer beer);
 
     /**
      * Convert request DTO to Beer entity.
-     * Ignores managed fields and categories (managed separately).
+     *
+     * @param beerRequestDTO beer request DTO
+     * @return Beer entity
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)
@@ -29,7 +37,9 @@ public interface BeerMapper {
 
     /**
      * Update the existing Beer entity from request DTO.
-     * Ignores managed fields and categories (managed via dedicated service methods).
+     *
+     * @param dto beer request DTO
+     * @param beer existing Beer entity
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)

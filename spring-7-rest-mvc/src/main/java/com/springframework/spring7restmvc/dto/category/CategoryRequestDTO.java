@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 
 /**
  * Request DTO for creating or updating a category.
+ * @param description the category's description
  */
 public record CategoryRequestDTO(
         @NotBlank(message = "Description is required")

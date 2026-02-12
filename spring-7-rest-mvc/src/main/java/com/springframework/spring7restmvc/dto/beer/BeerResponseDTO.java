@@ -7,6 +7,18 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Data Transfer Object for beer responses.
+ * @param id
+ * @param beerName
+ * @param beerStyle
+ * @param upc
+ * @param quantityOnHand
+ * @param price
+ * @param categories
+ * @param createdAt
+ * @param updatedAt
+ */
 public record BeerResponseDTO(
         UUID id,
         String beerName,

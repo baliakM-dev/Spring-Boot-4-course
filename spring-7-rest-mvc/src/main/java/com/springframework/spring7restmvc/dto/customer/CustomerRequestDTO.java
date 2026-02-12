@@ -6,9 +6,9 @@ import jakarta.validation.constraints.NotBlank;
  * Data Transfer Object for customer creation requests.
  *
  * <p>This DTO contains all required information for creating a new customer
- * and inclides validation constraints to ensure data integrity.</p>
+ * and includes validation constraints to ensure data integrity.</p>
  *
- * @param name the customer's name, must not be blank
+ * @param name the customer's name must not be blank
  */
 public record CustomerRequestDTO(
 

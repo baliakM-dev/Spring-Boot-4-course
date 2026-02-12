@@ -83,6 +83,9 @@ public interface BeerRepository extends JpaRepository<Beer, UUID> {
     /**
      * Override default findAll to eagerly fetch categories.
      * Prevents N+1 problem when fetching all beers.
+     *
+     * @param pageable pagination parameters
+     * @return a page of all beers
      */
     @EntityGraph(attributePaths = {"categories"})
     Page<Beer> findAll(Pageable pageable);

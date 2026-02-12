@@ -57,9 +57,9 @@ public class Category {
     private LocalDateTime updatedAt;
 
     /**
-     * Inverse side of many-to-many relationship.
+     * Inverse side of a many-to-many relationship.
      * Uses mappedBy to indicate Beer is the owning side.
-     * Builder.Default ensures initialization even with builder pattern.
+     * Builder.Default ensures initialization even with a builder pattern.
      */
     @Builder.Default
     @ManyToMany(mappedBy = "categories")

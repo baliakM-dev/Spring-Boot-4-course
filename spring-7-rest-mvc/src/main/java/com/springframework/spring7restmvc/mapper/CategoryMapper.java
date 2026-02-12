@@ -16,12 +16,12 @@ public interface CategoryMapper {
 
     /**
      * Convert Category entity to response DTO.
-     * Excludes beers collection to prevent circular references.
+     * Excludes a beer collection to prevent circular references.
      */
     CategoryResponseDTO categoryToResponseDTO(Category category);
 
     /**
-     * Convert request DTO to Category entity.
+     * Convert request DTO to a Category entity.
      * Ignores managed fields (id, version, timestamps, beers).
      */
     @Mapping(target = "id", ignore = true)

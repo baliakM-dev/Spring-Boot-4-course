@@ -89,7 +89,7 @@ public class BeerController {
     /**
      * GetBeerById
      *
-     * @param beerId
+     * @param beerId beer UUID
      * @return BeerResponseDTO
      */
     @GetMapping(BASE_URL_ID)
@@ -101,8 +101,8 @@ public class BeerController {
     /**
      * UpdateBeerById
      *
-     * @param beerId
-     * @param beerRequestDTO
+     * @param beerId         beer UUID
+     * @param beerRequestDTO beer update
      * @return BeerResponseDTO - updated beer
      */
     @PutMapping(BASE_URL_ID)
@@ -116,8 +116,8 @@ public class BeerController {
     /**
      * PatchBeerById - partial update of beer
      *
-     * @param beerId
-     * @param beerRequestDTO
+     * @param beerId         beer UUID
+     * @param beerRequestDTO - partial beer update
      * @return BeerResponseDTO - updated beer
      */
     @PatchMapping(BASE_URL_ID)
@@ -131,7 +131,7 @@ public class BeerController {
     /**
      * DeleteBeerById
      *
-     * @param beerId
+     * @param beerId beer UUID
      * @return ResponseEntity.noContent().build()
      */
     @DeleteMapping(BASE_URL_ID)

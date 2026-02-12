@@ -16,11 +16,11 @@ import java.util.UUID;
  * <p>This DTO contains all required information for creating a new beer
  * and includes validation constraints to ensure data integrity.</p>
  *
- * @param beerName the name of the beer, must not be blank
- * @param beerStyle the style/category of the beer, must not be null
- * @param upc the Universal Product Code, must not be blank
- * @param quantityOnHand the current inventory quantity, must be zero or positive
- * @param price the price of the beer, must be greater than zero
+ * @param beerName       the name of the beer must not be blank
+ * @param beerStyle      the style/category of the beer must not be null
+ * @param upc            the Universal Product Code must not be blank
+ * @param quantityOnHand the current inventory quantity must be zero or positive
+ * @param price          the price of the beer must be greater than zero
  */
 public record BeerRequestDTO(
 
@@ -41,4 +41,5 @@ public record BeerRequestDTO(
         BigDecimal price,
 
         Set<UUID> categoryIds
-) {}
+) {
+}
