@@ -33,6 +33,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
+@Table(name = "beers", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"beer_name"}, name = "beer_name_unique")
+})
 public class Beer {
 
     @Id

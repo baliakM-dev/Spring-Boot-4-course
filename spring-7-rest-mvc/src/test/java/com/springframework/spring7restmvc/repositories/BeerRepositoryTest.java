@@ -3,7 +3,6 @@ package com.springframework.spring7restmvc.repositories;
 import com.springframework.spring7restmvc.entities.Beer;
 import com.springframework.spring7restmvc.entities.BeerStyle;
 import com.springframework.spring7restmvc.entities.Category;
-import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,14 +17,15 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for {@link BeerRepository}.
+ */
 @DataJpaTest
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -43,7 +43,6 @@ class BeerRepositoryTest {
         registry.add("spring.datasource.username", mysql::getUsername);
         registry.add("spring.datasource.password", mysql::getPassword);
 
-        // odporúčané pri TC:
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
     }
 
@@ -112,10 +111,8 @@ class BeerRepositoryTest {
         Beer b1 = beerRepository.saveAndFlush(beer("Kozel"));
         Beer b2 = beerRepository.saveAndFlush(beer("Staropramen"));
 
-        // Then: kontrola “či existuje Kozel okrem b1” -> false
+        // Then:
         assertThat(beerRepository.existsByBeerNameIgnoreCaseAndIdNot("kozel", b1.getId())).isFalse();
-
-        // A kontrola “či existuje Staropramen okrem b1” -> true (lebo je to b2)
         assertThat(beerRepository.existsByBeerNameIgnoreCaseAndIdNot("staropramen", b1.getId())).isTrue();
     }
 
@@ -133,16 +130,15 @@ class BeerRepositoryTest {
 
         beerRepository.saveAllAndFlush(Set.of(b1, b2));
 
-        // When (EntityGraph metóda)
+        // When (EntityGraph method)
         Page<Beer> page = beerRepository.findAllByBeerNameContainingIgnoreCase("a", PageRequest.of(0, 10));
 
-        // Then (Alpha aj Beta obsahujú "a" v mene? "Beta" áno, "Alpha" áno)
+        // Then
         assertThat(page.getContent()).hasSize(2);
         assertThat(page.getContent())
                 .extracting(Beer::getBeerName)
                 .containsExactlyInAnyOrder("Alpha", "Beta");
 
-        // a categories sú dostupné
         assertThat(page.getContent().get(0).getCategories()).isNotNull();
     }
 }

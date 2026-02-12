@@ -29,6 +29,10 @@ import java.util.UUID;
 @Entity
 @Builder
 @EntityListeners(AuditingEntityListener.class)
+@Table(name = "categories",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"description"}, name = "category_description_unique")
+        })
 public class Category {
 
     @Id

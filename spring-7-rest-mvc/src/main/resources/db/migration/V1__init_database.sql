@@ -1,7 +1,7 @@
 drop table if exists beer cascade ;
 drop table if exists customers cascade;
 
-create table beer
+create table beers
 (
     beer_style       tinyint check ((beer_style between 0 and 9)),
     price            numeric(38, 2) not null,

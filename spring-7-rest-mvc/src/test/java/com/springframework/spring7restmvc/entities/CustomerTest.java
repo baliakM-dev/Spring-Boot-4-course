@@ -11,6 +11,9 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Entity tests for {@link Customer}.
+ */
 class CustomerTest {
     private Validator validator;
 

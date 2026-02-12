@@ -102,10 +102,6 @@ class BeerIntegrationTest {
                 .build();
     }
 
-    /**
-     * Bezpečné JSON skládanie bez locale problémov (žiadne 0,00).
-     * Namiesto %.2f používame BigDecimal.toPlainString().
-     */
     private String createBeerJson(String name, String style, String upc, Integer quantity, BigDecimal price) {
         String priceJson = (price == null) ? "0.00" : price.toPlainString();
 
@@ -126,9 +122,6 @@ class BeerIntegrationTest {
         );
     }
 
-    /**
-     * Bezpečné JSON skládanie + categoryIds.
-     */
     private String createBeerJsonWithCategories(String name, String style, String upc, Integer quantity,
                                                 BigDecimal price, Set<UUID> categoryIds) {
 
@@ -164,17 +157,12 @@ class BeerIntegrationTest {
                 .build();
     }
 
-    /**
-     * Minimal escaping pre stringy v JSON (ak máš špeciálne znaky/úvodzovky).
-     * Najlepšie je generovať JSON cez ObjectMapper, ale toto stačí na test helper.
-     */
     private String escapeJson(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     // ==================== Create Beer Tests ====================
-
     @Nested
     @DisplayName("Create Beer Tests")
     class CreateBeerTests {

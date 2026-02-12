@@ -4,6 +4,12 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Entity tests for {@link Beer}.
+ * <p>
+ *     Tests for beer entity and its relationships.
+ * </p>
+ */
 class BeerEntityTest {
     private Beer beer() {
         return Beer.builder()
