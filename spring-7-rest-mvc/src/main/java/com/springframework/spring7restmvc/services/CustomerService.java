@@ -10,16 +10,17 @@ import com.springframework.spring7restmvc.mapper.CustomerMapper;
 import com.springframework.spring7restmvc.repositories.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Service layer for managing customer business logic.
- *
- * Handles CRUD operations with proper validation and transaction management.
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -31,12 +32,11 @@ public class CustomerService {
 
     /**
      * Creates a new customer ensuring unique name across the catalog.
-     *
      * Uses save() which delegates to EntityManager and triggers JPA Auditing for timestamp management.
      *
      * @param dto the customer creation request
      * @return created customer with generated ID and timestamps
-     * @throws ResourceAlreadyExistsExceptions if customer name already exists
+     * @throws ResourceAlreadyExistsExceptions if the customer name already exists
      */
     @Transactional
     public CustomerResponseDTO createCustomer(CustomerRequestDTO dto) {
@@ -53,6 +53,28 @@ public class CustomerService {
     }
 
     /**
+     * Retrieves all customers from the catalog.
+     *
+     * @return list of customers
+     */
+    @Transactional(readOnly = true)
+    public Page<CustomerResponseDTO> getAllCustomers(
+            String name,
+            Pageable pageable) {
+        log.debug("Fetching all customers");
+        Page<Customer> customerPage;
+
+        boolean hasName = StringUtils.hasText(name);
+
+        if (hasName) {
+            customerPage = customerRepository.findByNameContainingIgnoreCase(name, pageable);
+        } else {
+            customerPage = customerRepository.findAll(pageable);
+        }
+        return customerPage.map(customerMapper::customerToResponseDto);
+    }
+
+    /**
      * Retrieves a customer by its unique identifier.
      *
      * @param id the customer ID
@@ -66,22 +88,7 @@ public class CustomerService {
     }
 
     /**
-     * Retrieves all customers from the catalog.
-     *
-     * @return list of customers
-     */
-    @Transactional(readOnly = true)
-    public List<CustomerResponseDTO> getAllCustomers() {
-        log.debug("Fetching all customers");
-        return customerRepository.findAll()
-                .stream()
-                .map(customerMapper::customerToResponseDto)
-                .toList();
-    }
-
-    /**
      *  Updates an existing customer with full replacement.
-     *
      *  Validates name uniqueness only if the name is being changed.
      *  JPA Auditing is used for timestamp management.
      *
@@ -118,7 +125,6 @@ public class CustomerService {
 
     /**
      * Validates that a customer name is unique.
-     *
      * For updates, excludeId allows the current beer to keep its name.
      * Case-insensitive check prevents "Pilsner" and "PILSNER" duplicates.
      *

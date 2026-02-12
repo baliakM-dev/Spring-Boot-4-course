@@ -41,10 +41,7 @@ public class CategoryService {
         log.debug("Creating new category with description: {}", dto.description());
 
         // Validate uniqueness
-        if (categoryRepository.existsByDescriptionIgnoreCase(dto.description())) {
-            log.warn("Category description already exists: {}", dto.description());
-            throw new ResourceAlreadyExistsExceptions("Category", "description", dto.description());
-        }
+        validateCategoryExistsOrThrow(null, dto.description());
 
         Category category = categoryMapper.dtoToCategory(dto);
         Category saved = categoryRepository.save(category);
@@ -105,10 +102,8 @@ public class CategoryService {
 
         // Only validate description uniqueness if it's being changed
         if (!category.getDescription().equalsIgnoreCase(dto.description())) {
-            if (categoryRepository.existsByDescriptionIgnoreCaseAndIdNot(dto.description(), categoryId)) {
-                log.warn("Category description already exists: {}", dto.description());
-                throw new ResourceAlreadyExistsExceptions("Category", "description", dto.description());
-            }
+
+            validateCategoryExistsOrThrow(categoryId, dto.description());
         }
 
         categoryMapper.updateCategoryFromDto(dto, category);
@@ -119,7 +114,7 @@ public class CategoryService {
 
     /**
      * Deletes a category by ID.
-     * Note: Due to CASCADE in join table, this will remove all beer-category associations.
+     * Note: Due to CASCADE in the join table, this will remove all beer-category associations.
      *
      * @param categoryId category ID to delete
      * @throws NotFoundException if category not found
@@ -139,6 +134,15 @@ public class CategoryService {
         log.info("Deleted category: id={}", categoryId);
     }
 
+    private void validateCategoryExistsOrThrow(UUID categoryId, String description) {
+        boolean exists = categoryId == null
+                ? categoryRepository.existsByDescriptionIgnoreCase(description)
+                : categoryRepository.existsByDescriptionIgnoreCaseAndIdNot(description, categoryId);
+        if (exists) {
+            log.warn("Category description already exists: {}", description);
+            throw new ResourceAlreadyExistsExceptions("Category", "description", description);
+        }
+    }
     /**
      * Retrieves a category or throws NotFoundException.
      * Package-private for use by BeerService.

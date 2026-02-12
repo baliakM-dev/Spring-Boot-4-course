@@ -1,10 +1,13 @@
 package com.springframework.spring7restmvc.entities;
 
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,29 +21,38 @@ class CustomerTest {
     }
 
     @Test
-    void validCustomerHasNoViolations() {
+    void should_HaveViolation_WhenNameBlank() {
         Customer customer = Customer.builder()
                 .name("")
                 .build();
-        var violations = validator.validate(customer);
-        assertThat(violations)
-                .anyMatch(v -> v.getPropertyPath().toString().equals("name"));
+
+        Set<ConstraintViolation<Customer>> violations = validator.validate(customer);
+
+        assertThat(violations).isNotEmpty();
     }
 
     @Test
-    void validCustomerHasNoViolations2() {
+    void should_HaveViolation_WhenNameTooLong() {
+        String longName = "A".repeat(101);
+
         Customer customer = Customer.builder()
-                .name("Test")
+                .name(longName)
                 .build();
-        var violations = validator.validate(customer);
+
+        Set<ConstraintViolation<Customer>> violations = validator.validate(customer);
+
+        assertThat(violations).isNotEmpty();
+    }
+
+    @Test
+    void should_BeValid_WhenNameCorrect() {
+        Customer customer = Customer.builder()
+                .name("Martin")
+                .build();
+
+        Set<ConstraintViolation<Customer>> violations = validator.validate(customer);
+
         assertThat(violations).isEmpty();
     }
 
-    @Test
-    void createCustomer() {
-        Customer customer = Customer.builder()
-                .name("Test")
-                .build();
-        assertThat(customer).isNotNull();
-    }
 }

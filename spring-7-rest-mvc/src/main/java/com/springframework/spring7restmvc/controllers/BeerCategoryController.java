@@ -11,8 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Beer-Category relationship management endpoints.
- * Add these to your existing BeerController.
+ * Rest controller for beer category management.
  */
 @Slf4j
 @RestController
@@ -32,8 +31,6 @@ public class BeerCategoryController {
      * @param beerId beer UUID
      * @param categoryId category UUID
      * @return updated beer with the new category
-     *
-     * Example: POST /api/v1/beers/{beerId}/categories/{categoryId}
      */
     @PostMapping(ADD_REMOVE_CATEGORIES_UDL)
     public ResponseEntity<BeerResponseDTO> addCategoryToBeer(
@@ -51,8 +48,6 @@ public class BeerCategoryController {
      * @param beerId beer UUID
      * @param categoryId category UUID
      * @return updated beer without the category
-     *
-     * Example: DELETE /api/v1/beers/{beerId}/categories/{categoryId}
      */
     @DeleteMapping(ADD_REMOVE_CATEGORIES_UDL)
     public ResponseEntity<BeerResponseDTO> removeCategoryFromBeer(
@@ -70,10 +65,6 @@ public class BeerCategoryController {
      * @param beerId beer UUID
      * @param categoryIds set of category UUIDs to assign
      * @return updated beer with new categories
-     *
-     * Example:
-     * PUT /api/v1/beers/{beerId}/categories
-     * Body: ["uuid1", "uuid2", "uuid3"]
      */
     @PutMapping(SET_GET_CATEGORIES_URL)
     public ResponseEntity<BeerResponseDTO> setCategoriesForBeer(
@@ -81,23 +72,6 @@ public class BeerCategoryController {
             @RequestBody Set<UUID> categoryIds) {
         log.debug("PUT /api/v1/beers/{}/categories - categoryIds: {}", beerId, categoryIds);
         BeerResponseDTO response = beerService.setCategoriesForBeer(beerId, categoryIds);
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Get all categories for a specific beer.
-     * This is included in the standard GET /beers/{id} response,
-     * but can also be accessed separately if needed.
-     *
-     * @param beerId beer UUID
-     * @return beer with its categories
-     *
-     * Example: GET /api/v1/beers/{beerId}/categories
-     */
-    @GetMapping(SET_GET_CATEGORIES_URL)
-    public ResponseEntity<BeerResponseDTO> getBeerWithCategories(@PathVariable UUID beerId) {
-        log.debug("GET /api/v1/beers/{}/categories", beerId);
-        BeerResponseDTO response = beerService.getBeerById(beerId);
         return ResponseEntity.ok(response);
     }
 }

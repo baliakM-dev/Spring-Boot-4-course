@@ -17,17 +17,7 @@ import java.util.UUID;
 public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     /**
-     * Find category by ID with eagerly fetched beers.
-     * Prevents N+1 problem when accessing category's beers.
-     *
-     * @param id category ID
-     * @return Optional containing category with beers, or empty
-     */
-    @Query("SELECT c FROM Category c LEFT JOIN FETCH c.beers WHERE c.id = :id")
-    Optional<Category> findByIdWithBeers(@Param("id") UUID id);
-
-    /**
-     * Find all categories with description containing the given text (case-insensitive).
+     * Find all categories with a description containing the given text (case-insensitive).
      *
      * @param description description to search for
      * @param pageable pagination parameters
@@ -36,7 +26,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     Page<Category> findAllByDescriptionContainingIgnoreCase(String description, Pageable pageable);
 
     /**
-     * Check if category with given description exists (case-insensitive).
+     * Check if a category with the given description exists (case-insensitive).
      *
      * @param description description to check
      * @return true if exists, false otherwise
@@ -44,7 +34,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     boolean existsByDescriptionIgnoreCase(String description);
 
     /**
-     * Check if category with given description exists, excluding a specific ID.
+     * Check if a category with a given description exists, excluding a specific ID.
      * Useful for updates to allow keeping the same description.
      *
      * @param description description to check

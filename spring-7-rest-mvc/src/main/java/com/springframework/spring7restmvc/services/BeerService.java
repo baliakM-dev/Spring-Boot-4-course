@@ -43,52 +43,27 @@ public class BeerService {
     private final CategoryService categoryService;
 
     /**
-     * Creates a new beer ensuring unique name across the catalog.*
+     * Creates a new beer ensuring unique name across the catalog.
+     * Optionally associates the beer with existing categories.
      * Uses save() which delegates to EntityManager and triggers JPA Auditing
      * for automatic timestamp management.
      *
      * @param dto the beer creation request
      * @return created beer with generated ID and timestamps
      * @throws ResourceAlreadyExistsExceptions if beer name exists (case-insensitive)
+     * @throws NotFoundException               if any referenced category does not exist
      */
     @Transactional
     public BeerResponseDTO createNewBeer(BeerRequestDTO dto) {
         log.debug("Creating new beer with name: {}", dto.beerName());
-        // 1. create beer entity from DTO
+
+        validateUniqueBeerName(dto.beerName(), null);
         Beer beer = beerMapper.dtoToBeer(dto);
+        associateCategoriesIfProvided(beer, dto.categoryIds());
+        Beer savedBeer = beerRepository.save(beer);
 
-        // 2. If dto contains ids of categories add
-        // voliteľné priradenie kategórií
-        if (dto.categoryIds() != null && !dto.categoryIds().isEmpty()) {
-
-            var categories = categoryRepository.findAllById(dto.categoryIds());
-
-            // ochrana: ak niektoré ID neexistuje, radšej failni
-            if (categories.size() != dto.categoryIds().size()) {
-                var foundIds = categories.stream().map(Category::getId).collect(java.util.stream.Collectors.toSet());
-                var missing = dto.categoryIds().stream().filter(id -> !foundIds.contains(id)).toList();
-                throw new NotFoundException("Category", "id", missing.toString());
-            }
-
-            categories.forEach(beer::addCategory); // teraz už bude fungovať
-        }
-        Beer saved = beerRepository.save(beer);
-
-        log.info("Created beer: id={}, name={}", saved.getId(), saved.getBeerName());
-        return beerMapper.beerToResponseDTO(saved);
-    }
-
-    /**
-     * Retrieves a beer by its unique identifier.
-     *
-     * @param id the beer ID
-     * @return beer data
-     * @throws NotFoundException if beer not found
-     */
-    @Transactional(readOnly = true)
-    public BeerResponseDTO getBeerById(UUID id) {
-        log.debug("Fetching beer with ID: {}", id);
-        return beerMapper.beerToResponseDTO(getBeerOrThrow(id));
+        log.info("Successfully created beer: id={}, name={}", savedBeer.getId(), savedBeer.getBeerName());
+        return beerMapper.beerToResponseDTO(savedBeer);
     }
 
     /**
@@ -154,6 +129,19 @@ public class BeerService {
     }
 
     /**
+     * Retrieves a beer by its unique identifier.
+     *
+     * @param id the beer ID
+     * @return beer data
+     * @throws NotFoundException if beer not found
+     */
+    @Transactional(readOnly = true)
+    public BeerResponseDTO getBeerById(UUID id) {
+        log.debug("Fetching beer with ID: {}", id);
+        return beerMapper.beerToResponseDTO(getBeerOrThrow(id));
+    }
+
+    /**
      * Updates an existing beer with full replacement.*
      * Validates name uniqueness only if the name is being changed.
      * JPA Auditing automatically updates the updatedAt timestamp.
@@ -172,7 +160,7 @@ public class BeerService {
 
         // Only validate name uniqueness if the name is changing
         if (!beer.getBeerName().equalsIgnoreCase(dto.beerName())) {
-            validateBeerNameUniqueness(dto.beerName(), beerId);
+            validateUniqueBeerName(dto.beerName(), beerId);
         }
 
         beerMapper.updateBeerFromDto(dto, beer);
@@ -199,9 +187,9 @@ public class BeerService {
 
         Beer beer = getBeerOrThrow(beerId);
 
-        // Only validate if name is being changed and is different
+        // Only validate if the name is being changed and is different
         if (patch.beerName() != null && !beer.getBeerName().equalsIgnoreCase(patch.beerName())) {
-            validateBeerNameUniqueness(patch.beerName(), beerId);
+            validateUniqueBeerName(patch.beerName(), beerId);
         }
 
         applyPatch(patch, beer);
@@ -332,6 +320,7 @@ public class BeerService {
     public BeerResponseDTO setCategoriesForBeer(UUID beerId, Set<UUID> categoryIds) {
         log.debug("Setting categories for beer {}: {}", beerId, categoryIds);
 
+        // Fetch beer to ensure it exists
         Beer beer = getBeerOrThrow(beerId);
 
         // Remove all existing categories
@@ -352,7 +341,7 @@ public class BeerService {
     }
 
     /**
-     * Validates that a beer name is unique.*
+     * Validates that a beer name is unique.
      * For updates, excludeId allows the current beer to keep its name.
      * Case-insensitive check prevents "Pilsner" and "PILSNER" duplicates.
      *
@@ -360,13 +349,13 @@ public class BeerService {
      * @param excludeId the beer ID to exclude from check (null for create operations)
      * @throws ResourceAlreadyExistsExceptions if name exists
      */
-    private void validateBeerNameUniqueness(String beerName, UUID excludeId) {
+    private void validateUniqueBeerName(String beerName, UUID excludeId) {
         boolean exists = excludeId == null
                 ? beerRepository.existsByBeerNameIgnoreCase(beerName)
                 : beerRepository.existsByBeerNameIgnoreCaseAndIdNot(beerName, excludeId);
 
         if (exists) {
-            log.warn("Beer name already exists: {}", beerName);
+            log.warn("Attempt to create/update beer with duplicate name: {}", beerName);
             throw new ResourceAlreadyExistsExceptions("Beer", "beerName", beerName);
         }
     }
@@ -379,10 +368,56 @@ public class BeerService {
      * @throws NotFoundException if not found
      */
     private Beer getBeerOrThrow(UUID beerId) {
-        return beerRepository.findById(beerId)
+        return beerRepository.findByIdWithCategories(beerId)
                 .orElseThrow(() -> {
                     log.warn("Beer not found with ID: {}", beerId);
                     return new NotFoundException("Beer", "id", beerId.toString());
                 });
     }
+
+    /**
+     * Associates existing categories with a beer if category IDs are provided.
+     * Validates that all category IDs exist in the database.
+     *
+     * @param beer        the beer to associate categories with
+     * @param categoryIds optional set of category IDs to associate
+     * @throws NotFoundException if any category ID does not exist
+     */
+    private void associateCategoriesIfProvided(Beer beer, Set<UUID> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return;
+        }
+
+        List<Category> categories = categoryRepository.findAllById(categoryIds);
+
+        validateAllCategoriesExist(categoryIds, categories);
+
+        categories.forEach(beer::addCategory);
+    }
+
+    /**
+     * Validates that all requested category IDs exist in the database.
+     *
+     * @param requestedIds    the category IDs requested by the client
+     * @param foundCategories the categories actually found in the database
+     * @throws NotFoundException if any category ID does not exist
+     */
+    private void validateAllCategoriesExist(Set<UUID> requestedIds, List<Category> foundCategories) {
+        if (foundCategories.size() != requestedIds.size()) {
+            Set<UUID> foundIds = foundCategories.stream()
+                    .map(Category::getId)
+                    .collect(Collectors.toSet());
+
+            List<UUID> missingIds = requestedIds.stream()
+                    .filter(id -> !foundIds.contains(id))
+                    .toList();
+
+            String missingIdsString = missingIds.stream()
+                    .map(UUID::toString)
+                    .collect(Collectors.joining(", "));
+
+            throw new NotFoundException("Category", "ids", missingIdsString);
+        }
+    }
+
 }

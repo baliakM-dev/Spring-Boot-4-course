@@ -27,19 +27,23 @@ spring:
         maintainTimeStats: false
 
   jpa:
+    show-sql: true
     hibernate:
       ddl-auto: validate
     database: mysql
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+        generate_statistics: true
         show_sql: true
         format_sql: true
+        default_batch_fetch_size: 16
+    open-in-view: false
 
 logging:
   level:
     org:
       hibernate:
+        stat: debug
         orm:
           jdbc:
             bind: trace

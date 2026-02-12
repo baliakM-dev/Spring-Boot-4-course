@@ -9,7 +9,6 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
-import org.hibernate.validator.constraints.Length;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -60,7 +59,7 @@ public class Beer {
     private Integer quantityOnHand;
 
     /**
-     * Owning side of many-to-many relationship with Category.
+     * Owning side of a many-to-many relationship with Category.
      * JoinTable defines the association table structure.
      * Builder.Default ensures Set is initialized even when using builder.
      */
@@ -76,7 +75,7 @@ public class Beer {
     /**
      * Helper method to add a category to this beer.
      * Maintains bidirectional consistency by updating both sides.
-     * Prevents infinite recursion by checking if category is already added.
+     * Prevents infinite recursion by checking if a category is already added.
      *
      * @param category the category to add
      */
@@ -114,8 +113,7 @@ public class Beer {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Beer)) return false;
-        Beer beer = (Beer) o;
+        if (!(o instanceof Beer beer)) return false;
         return id != null && id.equals(beer.getId());
     }
 
